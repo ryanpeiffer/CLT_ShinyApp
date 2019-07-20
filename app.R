@@ -8,7 +8,6 @@
 #
 
 library(shiny)
-#Testing to see if git is working!!!
 
 #===========================================================================
 # shiny ui function
@@ -22,7 +21,7 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            
+            h5("Click the button below to get started!"),
             actionButton("sample", "Draw Sample")
             
         ),
@@ -30,8 +29,7 @@ ui <- fluidPage(
         # Show a plot of the randomly generated values and the means of all sets of random values
         mainPanel(
            plotOutput("valsPlot"),
-           textOutput("meanText"),
-           textOutput("meanVecText"),
+           h5(textOutput("meanText"), style="color:#539ed4"),
            plotOutput("meansPlot")
         )
     )
@@ -66,18 +64,32 @@ server <- function(input, output) {
     output$valsPlot <- renderPlot({
         #only plot after the button is pressed for the first time
         if (input$sample > 0) {
-            hist(rv$rands, 
-                 breaks = seq(min_val, max_val, by = 1),
-                 main = paste("Sample Number", rv$n),
-                 xlab = paste0(n_vals, " random samples from Unif[", min_val, ",", max_val, "]"),
-                 ylab = "Count from Sample",
-                 xlim = range(min_val, max_val),
-                 ylim = range(0, 6),
-                 yaxt = 'n',
-                 labels = TRUE,
-                 col = 'blue', 
-                 border = 'white'
-            )
+            ggplot(tibble(vals = rv$rands), aes(vals)) +
+                ggtitle(paste0(n_vals, " Random Draws from Unif[", min_val, ",", max_val, "]")) +
+                theme(plot.title = element_text(hjust = 0.5)) +
+                geom_dotplot(method = "histodot",
+                             binwidth = 0.5,
+                             fill = "#539ed4") +
+                scale_y_continuous(NULL, breaks = NULL) +
+                scale_x_continuous(breaks = c(0:10), 
+                                   labels = my_labs,
+                                   limits = c(0,10)) +
+                theme(panel.grid.major = element_blank(), 
+                      panel.grid.minor = element_blank(),
+                      plot.title = element_text(hjust = 0.5))
+            
+            # hist(rv$rands, 
+            #      breaks = seq(min_val, max_val, by = 1),
+            #      main = paste("Sample Number", rv$n),
+            #      xlab = paste0(n_vals, " random draws from Unif[", min_val, ",", max_val, "]"),
+            #      ylab = "Count from Sample",
+            #      xlim = range(min_val, max_val),
+            #      ylim = range(0, 6),
+            #      yaxt = 'n',
+            #      labels = TRUE,
+            #      col = 'darkgray', 
+            #      border = 'white'
+            # )
         }
     })
     
