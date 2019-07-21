@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(ggplot2)
 
 #===========================================================================
 # shiny ui function
@@ -64,15 +65,16 @@ server <- function(input, output) {
     output$valsPlot <- renderPlot({
         #only plot after the button is pressed for the first time
         if (input$sample > 0) {
-            ggplot(tibble(vals = rv$rands), aes(vals)) +
+            ggplot(data.frame(vals = rv$rands), aes(vals)) +
                 ggtitle(paste0(n_vals, " Random Draws from Unif[", min_val, ",", max_val, "]")) +
                 theme(plot.title = element_text(hjust = 0.5)) +
                 geom_dotplot(method = "histodot",
                              binwidth = 0.5,
                              fill = "#539ed4") +
                 scale_y_continuous(NULL, breaks = NULL) +
-                scale_x_continuous(breaks = c(0:10), 
-                                   labels = my_labs,
+                scale_x_continuous(NULL,
+                                   breaks = c(0:10), 
+                                   labels = as.character(c(0:10)),
                                    limits = c(0,10)) +
                 theme(panel.grid.major = element_blank(), 
                       panel.grid.minor = element_blank(),
