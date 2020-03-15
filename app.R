@@ -29,9 +29,9 @@ ui <- fluidPage(
 
         # Show a plot of the randomly generated values and the means of all sets of random values
         mainPanel(
-           plotOutput("valsPlot"),
+           plotOutput("valsPlot", height = 200, width = 750),
            h5(textOutput("meanText"), style="color:#539ed4"),
-           plotOutput("meansPlot")
+           plotOutput("meansPlot", height = 300, width = 750)
         )
     )
 )
@@ -41,18 +41,19 @@ ui <- fluidPage(
 #===========================================================================
 
 server <- function(input, output) {
+   
+     set.seed(as.numeric(Sys.time()))
     
-    #define some constants that we will use (maybe make these variable later)
+    #define some constants that we will use for the random draws
     n_vals <- 10
     min_val <- 0
-    max_val <- 10
+    max_val <- 20
     
-    set.seed(as.numeric(Sys.time()))
-    
-    rv <- reactiveValues()
-    
+    breaks_vec <- c(min_val:max_val)
+    limits_vec <- c(min_val, max_val)
     
     #Take a new sample when the button is clicked.
+    rv <- reactiveValues()
     observeEvent(input$sample, {
         rv$n     <- input$sample
         rv$rands <- round(runif(n_vals, min_val, max_val))
@@ -66,32 +67,21 @@ server <- function(input, output) {
         #only plot after the button is pressed for the first time
         if (input$sample > 0) {
             ggplot(data.frame(vals = rv$rands), aes(vals)) +
-                ggtitle(paste0(n_vals, " Random Draws from Unif[", min_val, ",", max_val, "]")) +
-                theme(plot.title = element_text(hjust = 0.5)) +
                 geom_dotplot(method = "histodot",
                              binwidth = 0.5,
-                             fill = "#539ed4") +
+                             fill = "#539ed4",
+                             color = NA) +
                 scale_y_continuous(NULL, breaks = NULL) +
                 scale_x_continuous(NULL,
-                                   breaks = c(0:10), 
-                                   labels = as.character(c(0:10)),
-                                   limits = c(0,10)) +
+                                   breaks = breaks_vec, 
+                                   labels = as.character(breaks_vec),
+                                   limits = limits_vec) +
+                theme_bw() +
                 theme(panel.grid.major = element_blank(), 
                       panel.grid.minor = element_blank(),
-                      plot.title = element_text(hjust = 0.5))
-            
-            # hist(rv$rands, 
-            #      breaks = seq(min_val, max_val, by = 1),
-            #      main = paste("Sample Number", rv$n),
-            #      xlab = paste0(n_vals, " random draws from Unif[", min_val, ",", max_val, "]"),
-            #      ylab = "Count from Sample",
-            #      xlim = range(min_val, max_val),
-            #      ylim = range(0, 6),
-            #      yaxt = 'n',
-            #      labels = TRUE,
-            #      col = 'darkgray', 
-            #      border = 'white'
-            # )
+                      panel.background = element_blank(),
+                      plot.title = element_text(hjust = 0.5)) +
+                ggtitle(paste(n_vals, "Random Draws from", min_val, "to", max_val))
         }
     })
     
@@ -100,7 +90,7 @@ server <- function(input, output) {
     output$meanText <- renderText({
         #only show after the button is pressed for the first time
         if(input$sample > 0) {
-            paste("Mean of sample ", rv$n, ":", rv$cur_mean)
+            paste0("Mean of sample ", rv$n, ": ", rv$cur_mean)
         }
     })
     
@@ -109,15 +99,25 @@ server <- function(input, output) {
     output$meansPlot <- renderPlot({
         #only plot after the button is pressed for the first time
         if (input$sample > 0) {
-            hist(as.numeric(rv$means),
-                 main = paste("Plot of All Means"),
-                 breaks = seq(min_val, max_val, by = 1), 
-                 col = 'darkgray', 
-                 border = 'white'
-            )
+            ggplot(data.frame(vals = rv$means), aes(vals)) +
+                geom_histogram(aes(fill = (vals == rv$cur_mean)),
+                               binwidth = 1,
+                               boundary = 0,
+                               color = 'white') +
+                theme_bw() +
+                theme(panel.grid.major = element_blank(), 
+                      panel.grid.minor = element_blank(),
+                      panel.background = element_blank()) +
+                scale_y_continuous(breaks = NULL) +
+                scale_x_continuous(breaks = breaks_vec, limits = limits_vec) +
+                labs(x = "Means", y = "Frequency") +
+                scale_fill_manual(values = c(`TRUE` = "#539ed4", `FALSE` = "gray80"),
+                                  guide = FALSE) +
+                stat_function(fun = function(x) 
+                    dnorm(x, mean = (min_val+max_val)/2,
+                             sd = sd(rv$means)) * length(rv$means))
         }
     })
-    
 }
 
 # Run the application 
